@@ -8,6 +8,14 @@ import math
 import subprocess
 
 import requests
+import socket
+from requests_toolbelt.adapters.socket_options import SocketOptionsAdapter
+
+# 绑定网卡
+session = requests.Session()
+options = [(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, b"eth0")]
+for prefix in ('http://', 'https://'):
+    session.mount(prefix, SocketOptionsAdapter(socket_options=options))
 
 HUST_DNS = "202.114.0.242"
 OTHER_DNS = "223.5.5.5"
@@ -48,7 +56,7 @@ class HustNetwork(object):
     def _get_auth_url(self):
         # 通过 http 的网站进行跳转
         test_url = "http://1.1.1.1"
-        response = requests.get(test_url, proxies=self._proxies)
+        response = session.get(test_url, proxies=self._proxies)
         response.encoding = 'utf8'
 
         # 获取跳转链接
@@ -62,7 +70,7 @@ class HustNetwork(object):
         data = {
             "queryString": self._referer
         }
-        response = requests.post(
+        response = session.post(
             page_info_url, data=data, proxies=self._proxies)
         response.encoding = 'utf8'
         result = response.json()
@@ -124,7 +132,7 @@ class HustNetwork(object):
             "Referer": self._referer,
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36"
         }
-        response = requests.post(
+        response = session.post(
             self._auth_url, data=data, headers=headers, proxies=self._proxies)
 
         # 打印响应状态
